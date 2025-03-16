@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disk Scheduling Algorithms</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Disk Scheduling Algorithm Simulator</h1>
+        
+        <form id="schedulerForm">
+            <div class="input-group">
+                <label>Track Positions:</label>
+                <input type="text" id="tracks" placeholder="e.g., 98,183,37,122,14,124,65,67">
+                <button type="button" id="randomTracks">Random</button>
+            </div>
+            <div class="input-group">
+                <label>Initial Head Position:</label>
+                <input type="number" id="head" placeholder="e.g., 53">
+                <button type="button" id="randomHead">Random</button>
+            </div>
+            <div class="input-group">
+                <label>Algorithm:</label>
+                <select id="algorithm">
+                    <option value="fcfs">First Come First Serve (FCFS)</option>
+                    <option value="sstf">Shortest Seek Time First (SSTF)</option>
+                    <option value="scan">SCAN (Elevator)</option>
+                    <option value="cscan">C-SCAN</option>
+                    <option value="look">LOOK</option>
+                    <option value="clook">C-LOOK</option>
+                </select>
+            </div>
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div id="algorithm-results"></div>
+        <div class="graph-container">
+            <canvas id="algorithmChart"></canvas>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
