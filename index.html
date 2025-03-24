@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disk Scheduling Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Disk Scheduling Simulator <i class="fas fa-hdd"></i></h1>
+        
+        <form id="schedulerForm">
+            <div class="input-group">
+                <label for="tracks">
+                    <i class="fas fa-list-ol"></i> Track Positions
+                    <span class="tooltip" title="Enter comma-separated track numbers (0-199)">?</span>
+                </label>
+                <div class="input-with-button">
+                    <input type="text" id="tracks" placeholder="e.g., 98,183,37,122,14,124,65,67" 
+                           title="Enter comma-separated track numbers">
+                    <button type="button" id="randomTracks" title="Generate random track positions">
+                        <i class="fas fa-dice"></i> Random
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="head">
+                    <i class="fas fa-arrow-right"></i> Initial Head Position
+                    <span class="tooltip" title="Enter starting position of disk head (0-199)">?</span>
+                </label>
+                <div class="input-with-button">
+                    <input type="number" id="head" placeholder="e.g., 53" min="0" max="199"
+                           title="Enter a number between 0 and 199">
+                    <button type="button" id="randomHead" title="Generate random head position">
+                        <i class="fas fa-dice"></i> Random
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="algorithm">
+                    <i class="fas fa-microchip"></i> Algorithm
+                    <span class="tooltip" title="Select the disk scheduling algorithm to simulate">?</span>
+                </label>
+                <select id="algorithm" title="Choose a disk scheduling algorithm">
+                    <option value="ml">ML-based Solution (Best Algorithm)</option>
+                    <option value="fcfs">First Come First Serve (FCFS)</option>
+                    <option value="sstf">Shortest Seek Time First (SSTF)</option>
+                    <option value="scan">SCAN (Elevator)</option>
+                    <option value="cscan">C-SCAN (Circular SCAN)</option>
+                    <option value="look">LOOK</option>
+                    <option value="clook">C-LOOK (Circular LOOK)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-play"></i> Simulate
+            </button>
+        </form>
+
+        <div id="algorithm-results"></div>
+        
+        <div class="graph-container">
+            <canvas id="algorithmChart"></canvas>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
