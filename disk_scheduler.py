@@ -1,57 +1,175 @@
-import matplotlib.pyplot as plt
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 def calculate_seek_time(sequence):
     return sum(abs(sequence[i] - sequence[i-1]) for i in range(1, len(sequence)))
 
-def fcfs(requests, initial_pos):
-    sequence = [initial_pos] + requests
-    return sequence, calculate_seek_time(sequence)
+def fcfs(tracks, head):
+    sequence = [head] + tracks
+    total_seek_time = calculate_seek_time(sequence)
+    return {"sequence": sequence, "totalSeekTime": total_seek_time}
 
-def sstf(requests, initial_pos):
-    current, sequence, unvisited = initial_pos, [initial_pos], requests.copy()
-    while unvisited:
-        next_pos = min(unvisited, key=lambda x: abs(x - current))
-        sequence.append(next_pos)
-        current, unvisited = next_pos, [u for u in unvisited if u != next_pos]
-    return sequence, calculate_seek_time(sequence)
-
-def scan(requests, initial_pos, disk_size=200):
-    sequence = [initial_pos] + sorted([r for r in requests if r >= initial_pos])
-    if sequence[-1] < disk_size:
-        sequence.append(disk_size)
-    sequence += sorted([r for r in requests if r < initial_pos], reverse=True)
-    return sequence, calculate_seek_time(sequence)
-
-def plot_algorithm(sequence, seek_time, name, subplot_pos):
-    plt.subplot(3, 1, subplot_pos)
-    plt.plot(sequence, range(len(sequence)), '-o', color='blue')
-    plt.title(f'{name} (Total Seek Time: {seek_time})')
-    plt.xlabel('Disk Position')
-    plt.ylabel('Request Sequence')
-    plt.grid(True)
-
-def visualize(requests, initial_pos):
-    plt.figure(figsize=(10, 12))
+def sstf(tracks, head):
+    sequence = [head]
+    remaining = tracks.copy()
+    current = head
     
-    # Plot FCFS
-    sequence, seek_time = fcfs(requests, initial_pos)
-    plot_algorithm(sequence, seek_time, 'FCFS', 1)
+    while remaining:
+        distances = [abs(current - track) for track in remaining]
+        min_index = distances.index(min(distances))
+        next_track = remaining[min_index]
+        
+        current = next_track
+        sequence.append(next_track)
+        remaining.pop(min_index)
     
-    # Plot SSTF
-    sequence, seek_time = sstf(requests, initial_pos)
-    plot_algorithm(sequence, seek_time, 'SSTF', 2)
-    
-    # Plot SCAN
-    sequence, seek_time = scan(requests, initial_pos)
-    plot_algorithm(sequence, seek_time, 'SCAN', 3)
-    
-    plt.tight_layout()
-    plt.show()
+    return {"sequence": sequence, "totalSeekTime": calculate_seek_time(sequence)}
 
-def main():
-    requests = [98, 183, 37, 122, 14, 124, 65, 67]
-    initial_pos = 53
-    visualize(requests, initial_pos)
+def scan(tracks, head, direction='right'):
+    sorted_tracks = sorted(tracks)
+    sequence = [head]
+    max_track = max(tracks + [head])
+    
+    if direction == 'right':
+        # Move right
+        for track in sorted_tracks:
+            if track >= head:
+                sequence.append(track)
+        
+        if sequence[-1] != max_track:
+            sequence.append(max_track)
+        
+        # Move left
+        for track in reversed(sorted_tracks):
+            if track < head:
+                sequence.append(track)
+    else:
+        # Move left
+        for track in reversed(sorted_tracks):
+            if track <= head:
+                sequence.append(track)
+        
+        if sequence[-1] != 0:
+            sequence.append(0)
+        
+        # Move right
+        for track in sorted_tracks:
+            if track > head:
+                sequence.append(track)
+    
+    return {"sequence": sequence, "totalSeekTime": calculate_seek_time(sequence)}
 
-if __name__ == "__main__":
-    main()
+def cscan(tracks, head):
+    sorted_tracks = sorted(tracks)
+    sequence = [head]
+    max_track = max(tracks + [head])
+    
+    # Move right until end
+    for track in sorted_tracks:
+        if track >= head:
+            sequence.append(track)
+    
+    if sequence[-1] != max_track:
+        sequence.append(max_track)
+    
+    # Jump to beginning
+    sequence.append(0)
+    
+    # Continue from beginning
+    for track in sorted_tracks:
+        if track < head:
+            sequence.append(track)
+    
+    return {"sequence": sequence, "totalSeekTime": calculate_seek_time(sequence)}
+
+def look(tracks, head, direction='right'):
+    sorted_tracks = sorted(tracks)
+    sequence = [head]
+    
+    if direction == 'right':
+        # Move right
+        for track in sorted_tracks:
+            if track >= head:
+                sequence.append(track)
+        
+        # Move left
+        for track in reversed(sorted_tracks):
+            if track < head:
+                sequence.append(track)
+    else:
+        # Move left
+        for track in reversed(sorted_tracks):
+            if track <= head:
+                sequence.append(track)
+        
+        # Move right
+        for track in sorted_tracks:
+            if track > head:
+                sequence.append(track)
+    
+    return {"sequence": sequence, "totalSeekTime": calculate_seek_time(sequence)}
+
+def clook(tracks, head):
+    sorted_tracks = sorted(tracks)
+    sequence = [head]
+    
+    # Move right until end
+    for track in sorted_tracks:
+        if track >= head:
+            sequence.append(track)
+    
+    # Continue from beginning of remaining tracks
+    for track in sorted_tracks:
+        if track < head:
+            sequence.append(track)
+    
+    return {"sequence": sequence, "totalSeekTime": calculate_seek_time(sequence)}
+
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    data = request.json
+    tracks = [int(t) for t in data['tracks']]
+    head = int(data['head'])
+    algorithm = data['algorithm']
+    
+    algorithms = {
+        'fcfs': fcfs,
+        'sstf': sstf,
+        'scan': scan,
+        'cscan': cscan,
+        'look': look,
+        'clook': clook
+    }
+    
+    if algorithm not in algorithms:
+        return jsonify({"error": "Invalid algorithm"}), 400
+    
+    result = algorithms[algorithm](tracks, head)
+    return jsonify(result)
+
+@app.route('/compare', methods=['POST'])
+def compare():
+    data = request.json
+    tracks = [int(t) for t in data['tracks']]
+    head = int(data['head'])
+    
+    algorithms = {
+        'First Come First Serve (FCFS)': fcfs,
+        'Shortest Seek Time First (SSTF)': sstf,
+        'SCAN (Elevator)': scan,
+        'C-SCAN': cscan,
+        'LOOK': look,
+        'C-LOOK': clook
+    }
+    
+    results = {}
+    for name, func in algorithms.items():
+        results[name] = func(tracks, head)
+    
+    return jsonify(results)
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
