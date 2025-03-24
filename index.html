@@ -1,42 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Disk Scheduling Algorithms</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disk Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="container">
-        <h1>Disk Scheduling Algorithm Simulator</h1>
-        
-        <form id="schedulerForm">
-            <div class="input-group">
-                <label>Track Positions:</label>
-                <input type="text" id="tracks" placeholder="e.g., 98,183,37,122,14,124,65,67">
-                <button type="button" id="randomTracks">Random</button>
-            </div>
-            <div class="input-group">
-                <label>Initial Head Position:</label>
-                <input type="number" id="head" placeholder="e.g., 53">
-                <button type="button" id="randomHead">Random</button>
-            </div>
-            <div class="input-group">
-                <label>Algorithm:</label>
-                <select id="algorithm">
-                    <option value="fcfs">First Come First Serve (FCFS)</option>
-                    <option value="sstf">Shortest Seek Time First (SSTF)</option>
-                    <option value="scan">SCAN (Elevator)</option>
-                    <option value="cscan">C-SCAN</option>
-                    <option value="look">LOOK</option>
-                    <option value="clook">C-LOOK</option>
-                </select>
-            </div>
-            <button type="submit">Calculate</button>
-        </form>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400">
+                Disk Scheduler
+            </h1>
+            <p class="text-gray-400">Optimizing disk scheduling with intelligent algorithm selection</p>
+        </div>
 
-        <div id="algorithm-results"></div>
-        <div class="graph-container">
-            <canvas id="algorithmChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-6">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-hdd mr-3 text-blue-400"></i>
+                        Input Parameters
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-300 mb-2">Head Position</label>
+                            <div class="relative">
+                                <i class="fas fa-arrow-right absolute left-3 top-3 text-gray-400"></i>
+                                <input type="number" id="headPosition" min="0" 
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 mb-2">Track Requests</label>
+                            <div class="relative">
+                                <i class="fas fa-list-ol absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="trackRequests" placeholder="23,89,132,42,187"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="generateHead" 
+                                class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center">
+                                <i class="fas fa-random mr-2"></i>Random Head
+                            </button>
+                            <button id="generateTracks" 
+                                class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center">
+                                <i class="fas fa-dice mr-2"></i>Random Tracks
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 mb-2">Algorithm</label>
+                            <div class="relative">
+                                <i class="fas fa-code-branch absolute left-3 top-3 text-gray-400"></i>
+                                <select id="algorithm" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none">
+                                    <option value="fcfs">FCFS (First Come First Serve)</option>
+                                    <option value="sstf">SSTF (Shortest Seek Time First)</option>
+                                    <option value="scan">SCAN (Elevator)</option>
+                                    <option value="cscan">C-SCAN (Circular SCAN)</option>
+                                    <option value="look">LOOK</option>
+                                    <option value="clook">C-LOOK (Circular LOOK)</option>
+                                </select>
+                                <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <button id="runManual" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-play mr-2"></i>Run Algorithm
+                        </button>
+                        <button id="runAI" class="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-robot mr-2"></i>Find Optimal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-chart-line mr-3 text-teal-400"></i>Performance Metrics
+                    </h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1">Total Seek Time</p>
+                            <p class="text-2xl font-bold" id="seekTime">-</p>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1">Average Seek Time</p>
+                            <p class="text-2xl font-bold" id="avgSeekTime">-</p>
+                        </div>
+                        <div class="col-span-2 bg-gray-700 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1">Selected Algorithm</p>
+                            <p class="text-2xl font-bold" id="aiRecommendation">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-chart-area mr-3 text-purple-400"></i>Disk Movement Visualization
+                    </h2>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <canvas id="diskChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-table mr-3 text-indigo-400"></i>Algorithm Comparison
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-2 px-4 text-left">Algorithm</th>
+                                    <th class="py-2 px-4 text-right">Seek Time</th>
+                                    <th class="py-2 px-4 text-right">Avg. Seek Time</th>
+                                    <th class="py-2 px-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
