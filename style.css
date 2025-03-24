@@ -29,7 +29,7 @@ button:active {
 
 /* Chart container */
 #diskChart {
-    min-height: 300px;
+    min-height: 450px;
     width: 100%;
 }
 
@@ -103,6 +103,10 @@ button:active {
 
     .grid-cols-2 {
         grid-template-columns: 1fr;
+    }
+    
+    #diskChart {
+        min-height: 400px;
     }
 }
 
