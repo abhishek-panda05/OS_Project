@@ -1,217 +1,297 @@
-let algorithmChart = null;
-
-function createChart(ctx, type, data, options) {
-    return new Chart(ctx, { type, data, options });
-}
-
-// Disk Scheduling Algorithms
-function fcfs(tracks, head) {
-    const sequence = [head, ...tracks];
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function sstf(tracks, head) {
-    let currentHead = head;
-    let remainingTracks = [...tracks];
-    const sequence = [head];
-
-    while (remainingTracks.length > 0) {
-        const nextTrack = remainingTracks.reduce((closest, track) => 
-            Math.abs(track - currentHead) < Math.abs(closest - currentHead) ? track : closest
-        );
-        sequence.push(nextTrack);
-        currentHead = nextTrack;
-        remainingTracks = remainingTracks.filter(track => track !== nextTrack);
+class DiskScheduler {
+    constructor() {
+        this.requests = [];
+        this.headPosition = 0;
     }
 
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function scan(tracks, head) {
-    const sequence = [head];
-    const sortedTracks = [...tracks].sort((a, b) => a - b);
-    const maxTrack = Math.max(...tracks, head);
-    
-    let headIndex = sortedTracks.findIndex(track => track >= head);
-    if (headIndex === -1) headIndex = sortedTracks.length;
-    
-    // Move right
-    for (let i = headIndex; i < sortedTracks.length; i++) {
-        sequence.push(sortedTracks[i]);
-    }
-    sequence.push(maxTrack);
-    
-    // Move left
-    for (let i = headIndex - 1; i >= 0; i--) {
-        sequence.push(sortedTracks[i]);
+    setParameters(requests, headPosition) {
+        this.requests = [...requests];
+        this.headPosition = headPosition;
     }
 
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function cscan(tracks, head) {
-    const sequence = [head];
-    const sortedTracks = [...tracks].sort((a, b) => a - b);
-    const maxTrack = Math.max(...tracks, head);
-    const minTrack = Math.min(...tracks, head);
-    
-    let headIndex = sortedTracks.findIndex(track => track >= head);
-    if (headIndex === -1) headIndex = sortedTracks.length;
-    
-    // Move right
-    for (let i = headIndex; i < sortedTracks.length; i++) {
-        sequence.push(sortedTracks[i]);
-    }
-    sequence.push(maxTrack);
-    sequence.push(minTrack);
-    
-    // Continue from start
-    for (let i = 0; i < headIndex; i++) {
-        sequence.push(sortedTracks[i]);
+    calculateSeekTime(sequence) {
+        let seekTime = 0;
+        let currentPosition = this.headPosition;
+        for (const track of sequence) {
+            seekTime += Math.abs(currentPosition - track);
+            currentPosition = track;
+        }
+        return { seekTime, avgSeekTime: seekTime / sequence.length, sequence };
     }
 
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function look(tracks, head) {
-    const sequence = [head];
-    const sortedTracks = [...tracks].sort((a, b) => a - b);
-    
-    let headIndex = sortedTracks.findIndex(track => track >= head);
-    if (headIndex === -1) headIndex = sortedTracks.length;
-    
-    // Move right
-    for (let i = headIndex; i < sortedTracks.length; i++) {
-        sequence.push(sortedTracks[i]);
-    }
-    
-    // Move left
-    for (let i = headIndex - 1; i >= 0; i--) {
-        sequence.push(sortedTracks[i]);
+    fcfs() {
+        return this.calculateSeekTime([...this.requests]);
     }
 
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function clook(tracks, head) {
-    const sequence = [head];
-    const sortedTracks = [...tracks].sort((a, b) => a - b);
-    
-    let headIndex = sortedTracks.findIndex(track => track >= head);
-    if (headIndex === -1) headIndex = sortedTracks.length;
-    
-    // Move right
-    for (let i = headIndex; i < sortedTracks.length; i++) {
-        sequence.push(sortedTracks[i]);
-    }
-    
-    // Continue from start
-    for (let i = 0; i < headIndex; i++) {
-        sequence.push(sortedTracks[i]);
+    sstf() {
+        const sequence = [];
+        const remaining = [...this.requests];
+        let currentPosition = this.headPosition;
+        while (remaining.length > 0) {
+            const closest = remaining.reduce((prev, curr) => 
+                Math.abs(curr - currentPosition) < Math.abs(prev - currentPosition) ? curr : prev
+            );
+            sequence.push(closest);
+            currentPosition = closest;
+            remaining.splice(remaining.indexOf(closest), 1);
+        }
+        return this.calculateSeekTime(sequence);
     }
 
-    return { sequence, totalSeekTime: calculateSeekTime(sequence) };
-}
-
-function calculateSeekTime(sequence) {
-    let totalSeekTime = 0;
-    for (let i = 1; i < sequence.length; i++) {
-        totalSeekTime += Math.abs(sequence[i] - sequence[i-1]);
+    scan() {
+        const remaining = [...this.requests].sort((a, b) => a - b);
+        const rightTracks = remaining.filter(track => track >= this.headPosition);
+        const leftTracks = remaining.filter(track => track < this.headPosition).reverse();
+        return this.calculateSeekTime([...rightTracks, 199, ...leftTracks]);
     }
-    return totalSeekTime;
-}
 
-function updateChart(result, algorithmName) {
-    const sequence = result.sequence;
-    const ctx = document.getElementById('algorithmChart').getContext('2d');
-    
-    if (algorithmChart) algorithmChart.destroy();
-    
-    algorithmChart = createChart(ctx, 'line', {
-        labels: Array.from({ length: sequence.length }, (_, i) => i),
-        datasets: [{
-            label: 'Head Position',
-            data: sequence,
-            borderColor: 'rgb(52, 152, 219)',
-            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-            pointRadius: 6,
-            tension: 0.1
-        }]
-    }, {
-        responsive: true,
-        plugins: { 
-            title: { 
-                display: true, 
-                text: `${algorithmName} Disk Scheduling Algorithm` 
+    cscan() {
+        const remaining = [...this.requests].sort((a, b) => a - b);
+        const rightTracks = remaining.filter(track => track >= this.headPosition);
+        const leftTracks = remaining.filter(track => track < this.headPosition);
+        return this.calculateSeekTime([...rightTracks, 199, 0, ...leftTracks]);
+    }
+
+    look() {
+        const remaining = [...this.requests].sort((a, b) => a - b);
+        const rightTracks = remaining.filter(track => track >= this.headPosition);
+        const leftTracks = remaining.filter(track => track < this.headPosition).reverse();
+        return this.calculateSeekTime([...rightTracks, ...leftTracks]);
+    }
+
+    clook() {
+        const remaining = [...this.requests].sort((a, b) => a - b);
+        const rightTracks = remaining.filter(track => track >= this.headPosition);
+        const leftTracks = remaining.filter(track => track < this.headPosition);
+        return this.calculateSeekTime([...rightTracks, ...leftTracks]);
+    }
+
+    runAlgorithm(algorithm) {
+        switch(algorithm.toLowerCase()) {
+            case 'fcfs': return this.fcfs();
+            case 'sstf': return this.sstf();
+            case 'scan': return this.scan();
+            case 'cscan': return this.cscan();
+            case 'look': return this.look();
+            case 'clook': return this.clook();
+            default: throw new Error('Invalid algorithm');
+        }
+    }
+
+    findOptimalAlgorithm() {
+        const algorithms = ['fcfs', 'sstf', 'scan', 'cscan', 'look', 'clook'];
+        const results = {};
+        let bestAlgorithm = algorithms[0];
+        let minSeekTime = Infinity;
+
+        for (const alg of algorithms) {
+            results[alg] = this.runAlgorithm(alg);
+            if (results[alg].seekTime < minSeekTime) {
+                minSeekTime = results[alg].seekTime;
+                bestAlgorithm = alg;
             }
-        },
-        scales: {
-            x: { 
-                title: { display: true, text: 'Sequence Step' },
-                type: 'linear',
-                position: 'bottom'
+        }
+
+        return {
+            algorithm: bestAlgorithm,
+            results: results[bestAlgorithm],
+            allResults: results
+        };
+    }
+}
+
+class DiskVisualizer {
+    constructor(canvasId) {
+        this.ctx = document.getElementById(canvasId).getContext('2d');
+        this.chart = null;
+    }
+
+    visualizeSequence(sequence, algorithmName) {
+        const gradientFill = this.ctx.createLinearGradient(0, 0, 0, 400);
+        gradientFill.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+        gradientFill.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+        const config = {
+            type: 'line',
+            data: {
+                labels: sequence.map((_, i) => i),
+                datasets: [{
+                    label: `${algorithmName.toUpperCase()} Disk Movement`,
+                    data: sequence,
+                    borderColor: '#3b82f6',
+                    backgroundColor: gradientFill,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3b82f6',
+                    borderWidth: 3
+                }]
             },
-            y: { 
-                title: { display: true, text: 'Track Position' },
-                min: Math.min(...sequence) - 10,
-                max: Math.max(...sequence) + 10,
-                ticks: {
-                    stepSize: 20
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1000, easing: 'easeInOutQuart' },
+                scales: {
+                    y: {
+                        title: { display: true, text: 'Track Number', color: '#9ca3af' },
+                        min: 0,
+                        max: 200,
+                        grid: { color: 'rgba(75, 85, 99, 0.2)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Request Sequence', color: '#9ca3af' },
+                        grid: { color: 'rgba(75, 85, 99, 0.2)' },
+                        ticks: { color: '#9ca3af' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#9ca3af',
+                            font: { family: "'Inter', sans-serif", size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: context => `Track: ${context.parsed.y}`
+                        }
+                    }
                 }
             }
-        }
-    });
+        };
+
+        if (this.chart) this.chart.destroy();
+        this.chart = new Chart(this.ctx, config);
+    }
+
+    updateComparisonTable(results) {
+        const tableBody = document.getElementById('comparisonTableBody');
+        tableBody.innerHTML = '';
+        Object.entries(results)
+            .sort((a, b) => a[1].seekTime - b[1].seekTime)
+            .forEach(([algorithm, data], index) => {
+                const isLowest = index === 0;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 ${isLowest ? 'text-green-400 font-semibold' : ''}">${algorithm.toUpperCase()}</td>
+                    <td class="py-2 px-4 text-right ${isLowest ? 'text-green-400 font-semibold' : ''}">${data.seekTime}</td>
+                    <td class="py-2 px-4 text-right ${isLowest ? 'text-green-400 font-semibold' : ''}">${data.avgSeekTime.toFixed(2)}</td>
+                    <td class="py-2 px-4 text-right ${isLowest ? 'text-green-400 font-semibold' : ''}">
+                        <button onclick="visualizeAlgorithm('${algorithm}')" 
+                            class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-all duration-200">
+                            View
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+    }
+
+    updateResults(results, algorithm) {
+        const animate = (element, end) => {
+            const start = 0;
+            const duration = 1000;
+            const startTime = performance.now();
+            const update = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                element.textContent = Math.round(start + (end - start) * progress);
+                if (progress < 1) requestAnimationFrame(update);
+            };
+            requestAnimationFrame(update);
+        };
+
+        animate(document.getElementById('seekTime'), results.seekTime);
+        animate(document.getElementById('avgSeekTime'), results.avgSeekTime);
+        const aiRecommendationEl = document.getElementById('aiRecommendation');
+        aiRecommendationEl.textContent = algorithm.toUpperCase();
+        aiRecommendationEl.classList.add('highlight');
+        setTimeout(() => aiRecommendationEl.classList.remove('highlight'), 1000);
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('randomTracks').onclick = () => {
-        const tracks = Array.from({ length: Math.floor(Math.random() * 5) + 5 }, 
-            () => Math.floor(Math.random() * 200));
-        document.getElementById('tracks').value = tracks.join(',');
-    };
+// Initialize components and get input values
+const scheduler = new DiskScheduler();
+const visualizer = new DiskVisualizer('diskChart');
+const getInputValues = () => ({
+    headPosition: parseInt(document.getElementById('headPosition').value),
+    trackRequests: document.getElementById('trackRequests').value
+        .split(',')
+        .map(x => parseInt(x.trim()))
+        .filter(x => !isNaN(x))
+});
 
-    document.getElementById('randomHead').onclick = () => {
-        document.getElementById('head').value = Math.floor(Math.random() * 200);
-    };
+// Generate random values
+document.getElementById('generateHead').addEventListener('click', () => 
+    document.getElementById('headPosition').value = Math.floor(Math.random() * 200)
+);
 
-    document.getElementById('schedulerForm').onsubmit = (e) => {
-        e.preventDefault();
-        const tracks = document.getElementById('tracks').value.split(',').map(t => parseInt(t.trim()));
-        const head = parseInt(document.getElementById('head').value);
-        const algorithm = document.getElementById('algorithm').value;
+document.getElementById('generateTracks').addEventListener('click', () => 
+    document.getElementById('trackRequests').value = Array.from(
+        { length: Math.floor(Math.random() * 10) + 5 }, 
+        () => Math.floor(Math.random() * 200)
+    ).join(',')
+);
 
-        if (!tracks.length || isNaN(head)) {
-            alert('Please fill in all fields');
-            return;
-        }
+// Visualize specific algorithm
+window.visualizeAlgorithm = algorithm => {
+    const { headPosition, trackRequests } = getInputValues();
+    if (isNaN(headPosition) || trackRequests.length === 0) {
+        alert('Please enter valid head position and track requests');
+        return;
+    }
+    scheduler.setParameters(trackRequests, headPosition);
+    const results = scheduler.runAlgorithm(algorithm);
+    visualizer.visualizeSequence(results.sequence, algorithm);
+    visualizer.updateResults(results, algorithm);
+    document.getElementById('algorithm').value = algorithm;
+};
 
-        const algorithms = {
-            'fcfs': fcfs,
-            'sstf': sstf,
-            'scan': scan,
-            'cscan': cscan,
-            'look': look,
-            'clook': clook
-        };
+// Run manual algorithm
+document.getElementById('runManual').addEventListener('click', () => {
+    const { headPosition, trackRequests } = getInputValues();
+    const selectedAlgorithm = document.getElementById('algorithm').value;
+    if (isNaN(headPosition) || trackRequests.length === 0) {
+        alert('Please enter valid head position and track requests');
+        return;
+    }
+    scheduler.setParameters(trackRequests, headPosition);
+    const allResults = Object.fromEntries(
+        ['fcfs', 'sstf', 'scan', 'cscan', 'look', 'clook']
+            .map(alg => [alg, scheduler.runAlgorithm(alg)])
+    );
+    visualizer.updateComparisonTable(allResults);
+    const results = scheduler.runAlgorithm(selectedAlgorithm);
+    visualizer.visualizeSequence(results.sequence, selectedAlgorithm);
+    visualizer.updateResults(results, selectedAlgorithm);
+});
 
-        const algorithmNames = {
-            'fcfs': 'First Come First Serve (FCFS)',
-            'sstf': 'Shortest Seek Time First (SSTF)',
-            'scan': 'SCAN (Elevator)',
-            'cscan': 'C-SCAN',
-            'look': 'LOOK',
-            'clook': 'C-LOOK'
-        };
-
-        const result = algorithms[algorithm](tracks, head);
-
-        document.getElementById('algorithm-results').innerHTML = `
-            <h3>Results for ${algorithmNames[algorithm]}:</h3>
-            <p><strong>Starting Head Position:</strong> ${head}</p>
-            <p><strong>Track Sequence:</strong> ${result.sequence.join(' -> ')}</p>
-            <p><strong>Total Seek Time:</strong> ${result.totalSeekTime} cylinders</p>
-        `;
-
-        updateChart(result, algorithmNames[algorithm]);
-    };
+// Find optimal algorithm
+document.getElementById('runAI').addEventListener('click', () => {
+    const { headPosition, trackRequests } = getInputValues();
+    if (isNaN(headPosition) || trackRequests.length === 0) {
+        alert('Please enter valid head position and track requests');
+        return;
+    }
+    try {
+        scheduler.setParameters(trackRequests, headPosition);
+        const optimal = scheduler.findOptimalAlgorithm();
+        visualizer.updateComparisonTable(optimal.allResults);
+        visualizer.visualizeSequence(optimal.results.sequence, optimal.algorithm);
+        visualizer.updateResults(optimal.results, optimal.algorithm);
+        document.getElementById('algorithm').value = optimal.algorithm;
+    } catch (error) {
+        console.error('Error finding optimal algorithm:', error);
+        alert('Error finding optimal algorithm. Please try again.');
+    }
 });
