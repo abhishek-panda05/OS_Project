@@ -220,7 +220,6 @@ class DiskVisualizer {
     }
 }
 
-// Initialize components and get input values
 const scheduler = new DiskScheduler();
 const visualizer = new DiskVisualizer('diskChart');
 const getInputValues = () => ({
@@ -231,7 +230,6 @@ const getInputValues = () => ({
         .filter(x => !isNaN(x))
 });
 
-// Generate random values
 document.getElementById('generateHead').addEventListener('click', () => 
     document.getElementById('headPosition').value = Math.floor(Math.random() * 200)
 );
@@ -243,7 +241,6 @@ document.getElementById('generateTracks').addEventListener('click', () =>
     ).join(',')
 );
 
-// Visualize specific algorithm
 window.visualizeAlgorithm = algorithm => {
     const { headPosition, trackRequests } = getInputValues();
     if (isNaN(headPosition) || trackRequests.length === 0) {
@@ -257,7 +254,6 @@ window.visualizeAlgorithm = algorithm => {
     document.getElementById('algorithm').value = algorithm;
 };
 
-// Run manual algorithm
 document.getElementById('runManual').addEventListener('click', () => {
     const { headPosition, trackRequests } = getInputValues();
     const selectedAlgorithm = document.getElementById('algorithm').value;
@@ -276,7 +272,6 @@ document.getElementById('runManual').addEventListener('click', () => {
     visualizer.updateResults(results, selectedAlgorithm);
 });
 
-// Find optimal algorithm
 document.getElementById('runAI').addEventListener('click', () => {
     const { headPosition, trackRequests } = getInputValues();
     if (isNaN(headPosition) || trackRequests.length === 0) {
