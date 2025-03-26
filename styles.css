@@ -1,9 +1,9 @@
-/* Custom styles */
+
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Input styles */
+
 input[type="number"],
 input[type="text"],
 select {
@@ -18,7 +18,7 @@ select:focus {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Button animations */
+
 button {
     transition: all 0.2s ease;
 }
@@ -33,7 +33,7 @@ button:active {
     width: 100%;
 }
 
-/* Card hover effects */
+
 .bg-gray-800 {
     transition: transform 0.2s ease;
 }
@@ -42,7 +42,7 @@ button:active {
     transform: translateY(-2px);
 }
 
-/* Gradient text animation */
+
 .bg-clip-text {
     animation: gradient 8s ease infinite;
     background-size: 200% 200%;
@@ -60,7 +60,7 @@ button:active {
     }
 }
 
-/* Highlight animation for AI results */
+
 @keyframes highlight {
     0% {
         transform: scale(1);
@@ -80,7 +80,7 @@ button:active {
     animation: highlight 1s ease;
 }
 
-/* Performance metric cards */
+
 .bg-gray-700 {
     transition: all 0.3s ease;
 }
@@ -90,7 +90,7 @@ button:active {
     transform: translateY(-2px);
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
@@ -110,7 +110,7 @@ button:active {
     }
 }
 
-/* Custom scrollbar */
+
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
